@@ -1,0 +1,33 @@
+<html>
+	<head>
+		<title>Signup!</title>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js" type="text/javascript"></script>
+	</head>
+
+	<body>
+		<h1>Signup</h1>
+		<form action="/signup" method="post">
+			<label>Username:</label><input type="text" id="username" name="username"/>
+			<label>Password:</label><input type="password" name="password"/><br/>
+			<label>Policeman </label><input type="checkbox" name="policeman" /><br/>
+			<label>Doctor </label><input type="checkbox"  name="doctor" /><br/>
+			<label>Engineer </label><input type="checkbox" name="engineer" /><br/>
+			<label>Teacher </label><input type="checkbox" name="teacher" /><br/>
+			<label>Lawyer </label><input type="checkbox" name="lawyer" /><br/>
+			<label>Artist </label><input type="checkbox" name="artist" /><br/>
+			<label>Scientist </label><input type="checkbox" name="scientist" /><br/>
+			<label>Musician </label><input type="checkbox" name="musician" /><br/>
+			<label>Banker </label><input type="checkbox" name="banker" /><br/>
+			<label>Electrician </label><input type="checkbox" name="electrician" /><br/>
+			<input style="display: none" type="date" id="date-value" name="date" /><br/>
+			<input type="submit" value="Signup"/>
+		</form>
+
+		<script type="text/javascript">
+			$(document).ready(function() {
+				var today = new Date();
+				$("#date-value").attr("value", today.toISOString().split('T')[0]);
+			});
+		</script>
+	</body>
+</html>

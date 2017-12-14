@@ -1,0 +1,145 @@
+<html>
+	<head>
+		<title>Create an appointment</title>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js" type="text/javascript"></script>
+
+		<script type="text/javascript">
+
+			var _MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+			// a and b are javascript Date objects
+			var dateDiffInDays = function (a, b) {
+			  // Discard the time and time-zone information.
+			  var utc1 = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+			  var utc2 = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+
+			  return Math.floor((utc2 - utc1) / _MS_PER_DAY);
+			}
+
+			var setAppointment = function (date) {
+				$.getJSON(window.location.href, function(user) {
+					$.getJSON("/calendar/user/current/", function(currentUser) {
+
+							if (currentUser.id === user.id) {
+								alert("You can't meet yourself");
+								return;
+							}
+
+							var today = new Date();
+							var last_updated = new Date(user.last_updated);
+							
+							today.setHours(0, 0, 0);
+							last_updated.setHours(0, 0, 0);
+							today.setDate(today.getDate() - 1);
+
+							while (last_updated < today) {
+								currentUser.appointments[currentUser.current] = 0;
+								currentUser.current = (currentUser.current + 1) % currentUser.appointments.length;
+								last_updated.setDate(last_updated.getDate() + 1);
+							}
+
+							today.setDate(today.getDate() + 1);
+							
+							var selected = new Date(date);
+							selected.setHours(0, 0, 0);
+							
+							var s = dateDiffInDays(today, selected);
+
+							var j = (user.current + s) % user.appointments.length;
+							user.appointments[j] =	currentUser.id;
+
+							var i = (currentUser.current + s) % currentUser.appointments.length;
+							currentUser.appointments[i] = user.id;
+
+							$.post("/calendar/user/update/", currentUser, function() {
+								$.post("/calendar/user/update/", user, function() {
+										selected.setDate(selected.getDate() + 1);
+										alert("Meeting set with " + user.username + " on " + selected.toISOString().split('T')[0]);
+										window.location.href = "http://localhost:8000/calendar/appointments/all";
+								});
+							});
+
+			
+						});
+				});
+			}
+		</script>
+
+		<script type="text/template" id="user-detail">
+			<h1><%= username %></h1>
+			<p>Click <a href="/calendar/appointments/all">here</a> to view your appointments</p>
+			<ul id="free-dates">
+			</ul>
+		</script>
+
+		<script type="text/template" id="date">
+			<li><p><%= date %></p><button onclick="return setAppointment(&quot;<%= date %>&quot;)">Set Appointment</button></li>
+		</script>
+
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+
+		<script type="text/javascript">
+			var getUser = function () {
+				$.getJSON(window.location.href, function (user) {
+					var temp = _.template($("#user-detail").html());
+					$("#user").append(temp(user));
+					var last_updated = user.last_updated;
+
+					var date_temp = _.template($("#date").html());
+					
+					var today = new Date();
+					var last_updated = new Date(user.last_updated);
+					
+					last_updated.setHours(0, 0, 0);
+					today.setHours(0, 0, 0);
+					today.setDate(today.getDate() - 1);
+					
+					var updated = false;
+
+					while (last_updated < today) {
+						user.appointments[user.current] = 0;
+						user.current = (user.current + 1) % user.appointments.length;
+						last_updated.setDate(last_updated.getDate() + 1);
+						update = true;
+					}
+
+					var today = new Date();
+					if (user.appointments[user.current] == 0) {
+							var t = {date: today.toISOString().split('T')[0]};
+							$("#free-dates").append(date_temp(t));
+					}
+
+					today.setDate(today.getDate() + 1);
+
+					for (var cur = (user.current + 1) % user.appointments.length; cur != user.current; cur = (cur + 1) % user.appointments.length) {
+						if (user.appointments[cur] == 0) {
+							var t = {date: today.toISOString().split('T')[0]};
+							$("#free-dates").append(date_temp(t));
+						}
+						today.setDate(today.getDate() + 1);
+					}
+
+					today = new Date();
+					user.last_updated = today.toISOString().split('T')[0];
+
+					console.log("updating: " + JSON.stringify(user));
+					
+					if (updated) {
+						$.post("/calendar/user/update", user);
+					}
+				});
+			}
+
+		</script>
+	</head>
+	<body>
+		<div id="user">
+		</div>
+
+		<script type="text/javascript">
+			$(document).ready(function() {
+				getUser();
+			});
+		</script>
+	</body>
+</html>
